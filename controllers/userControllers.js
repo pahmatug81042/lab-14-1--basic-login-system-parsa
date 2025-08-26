@@ -1,4 +1,6 @@
+const { use } = require('react');
 const User = require('../models/User.js');
+const jwt = require('jsonwebtoken');
 
 exports.registerUser = async (req, res) => {
     const { username, email, password } = req.body;
@@ -10,6 +12,26 @@ exports.registerUser = async (req, res) => {
         const user = await User.create({ username, email, password });
         const { password: pw, ...userData } = user._doc;
         res.status(201).json(userData);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+exports.loginUser = async (req, res) => {
+    const { email, password } = req.body;
+    try {
+        const user = await User.findOne({ email });
+        if (!user || !(await user.isCorrectPassword(password))) {
+            return res.status(400).json({ message: 'Incorrect email or password' });
+        }
+
+        const token = jwt.sign(
+            { id: user._id, username: user.username },
+            { expiresIn: '1h' }
+        );
+
+        const { password: pw, ...userData } = user._doc;
+        res.json({ token, user: userData });
     } catch (error) {
         res.status(500).json({ message: 'Server error' });
     }

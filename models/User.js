@@ -17,10 +17,12 @@ const userSchema = new mongoose.Schema({
     }
 });
 
-// Pre-save hook to hash password
-userSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) return next();
-    this.password = await bcrypt.hash(this.password, 10);
+// Password hashing before save
+userSchema.pre("save", async function (next) {
+    if (this.isNew || this.isModified("password")) {
+        const saltRounds = 10;
+        this.password = await bcrypt.hash(this.password, saltRounds)
+    }
     next();
 });
 
